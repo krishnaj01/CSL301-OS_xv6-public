@@ -47,6 +47,22 @@ trap(struct trapframe *tf)
   }
 
   switch(tf->trapno){
+  case T_PGFLT:
+    struct proc *p = myproc();
+
+    if(p != 0){
+      p->page_faults++;
+
+      uint va = rcr2(); // faulting address
+      int is_write = (tf->err & 0x2) ? 1 : 0; // PF error code bit1 -> write
+
+      if(vmfault(p->pgdir, va, is_write) < 0){
+        cprintf("pid %d %s: page fault at 0x%x eip 0x%x\n", p->pid, p->name, va, tf->eip);
+        p->killed = 1;
+      }
+    }
+    break;
+
   case T_IRQ0 + IRQ_TIMER:
     if(cpuid() == 0){
       acquire(&tickslock);

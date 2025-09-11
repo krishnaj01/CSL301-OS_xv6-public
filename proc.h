@@ -65,6 +65,7 @@ struct proc
   int run_ticks;              // Number of ticks the process has run
   int get_proc_info;
   int priority;             // Process priority (lower value means higher priority)
+  int page_faults;          // Count of page faults
 };
 
 

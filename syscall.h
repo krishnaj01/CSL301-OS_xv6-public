@@ -21,11 +21,12 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_strrev  23
+#define SYS_setflag 29
+#define SYS_getflag 30
 #define SYS_getstats 25
 #define SYS_getpinfo  22
 #define SYS_numvp 26
 #define SYS_numpp 27
 #define SYS_getptsize 28
 #define SYS_setpriority 24
-#define SYS_setflag 29
-#define SYS_getflag 30
+#define SYS_getpagefaults 31

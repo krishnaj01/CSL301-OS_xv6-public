@@ -189,6 +189,8 @@ UPROGS=\
 	_pinfo\
 	_memtest\
 	_prioritytest\
+	_tlbrun\
+	_tlbtest\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -198,7 +200,7 @@ fs.img: mkfs README $(UPROGS)
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*.o *.d *.asm *.sym vectors.S bootblock entryother \
-	initcode initcode.out kernel xv6.img fs.img kernelmemfs \
+	initcode initcode.out kernel xv6.img fs.img kernelmemfs \x
 	xv6memfs.img mkfs .gdbinit \
 	$(UPROGS)
 

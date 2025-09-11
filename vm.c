@@ -385,6 +385,32 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
   return 0;
 }
 
+int vmfault(pde_t *pgdir, uint va, int write) {
+  struct proc *p = myproc();
+  void *mem;
+
+  if (va >= p->sz)
+    return -1;
+  
+  va = PGROUNDDOWN(va); // already mapped? then nothing to do
+
+  pte_t *pte = walkpgdir(pgdir, (char *)va, 0);
+  if (pte && (*pte & PTE_P))
+    return 0; // already mapped
+  
+  mem = kalloc();
+  if (mem == 0)
+    return -1;
+  memset(mem, 0, PGSIZE);
+
+  if (mappages(pgdir, (char *)va, PGSIZE, V2P(mem), PTE_W | PTE_U) < 0) {
+    kfree(mem);
+    return -1;
+  }
+  return 0;
+}
+
+
 //PAGEBREAK!
 // Blank page.
 //PAGEBREAK!

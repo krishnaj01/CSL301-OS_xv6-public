@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "user.h": "c",
-        "procinfo.h": "c"
+        "procinfo.h": "c",
+        "x86.h": "c",
+        "types.h": "c"
     }
 }

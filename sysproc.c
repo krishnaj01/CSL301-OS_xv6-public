@@ -195,3 +195,8 @@ int sys_setpriority(void) {
 
   return 0;
 }
+
+int sys_getpagefaults(void) {
+  struct proc *p = myproc();
+  return p->page_faults;
+}

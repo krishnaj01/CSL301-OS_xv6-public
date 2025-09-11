@@ -39,6 +39,7 @@ int numvp(void);
 int numpp(void);
 int getptsize(void);
 int setpriority (int);
+int getpagefaults(void);
 
 // ulib.c
 int stat(const char*, struct stat*);

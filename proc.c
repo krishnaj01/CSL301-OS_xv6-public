@@ -90,6 +90,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->priority = 60;  // Default priority
+  p->page_faults = 0;
 
   release(&ptable.lock);
 
@@ -116,7 +118,6 @@ found:
 
   p->sched_count = 0;
   p->run_ticks = 0;
-  p->priority = 60;  // Default priority
 
   return p;
 }
@@ -168,13 +169,20 @@ growproc(int n)
   struct proc *curproc = myproc();
 
   sz = curproc->sz;
+  // if(n > 0){
+  //   if((sz = allocuvm(curproc->pgdir, sz, sz + n)) == 0)
+  //     return -1;
+  // } else if(n < 0){
+  //   if((sz = deallocuvm(curproc->pgdir, sz, sz + n)) == 0)
+  //     return -1;
+  // }
+  
   if(n > 0){
-    if((sz = allocuvm(curproc->pgdir, sz, sz + n)) == 0)
-      return -1;
-  } else if(n < 0){
-    if((sz = deallocuvm(curproc->pgdir, sz, sz + n)) == 0)
-      return -1;
+    sz += n; // Just bump size, do not allocate
+  } else if (n < 0){
+    sz = deallocuvm(curproc->pgdir, sz, sz + n);
   }
+  
   curproc->sz = sz;
   switchuvm(curproc);
   return 0;

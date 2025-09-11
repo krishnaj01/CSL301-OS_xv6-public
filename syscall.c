@@ -104,14 +104,15 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_strrev(void);
+extern int sys_setflag(void);
+extern int sys_getflag(void);
 extern int sys_getstats(void);
 extern int sys_getpinfo(void);
 extern int sys_numvp(void);
 extern int sys_numpp(void);
 extern int sys_getptsize(void);
 extern int sys_setpriority(void);
-extern int sys_setflag(void);
-extern int sys_getflag(void);
+extern int sys_getpagefaults(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -144,6 +145,7 @@ static int (*syscalls[])(void) = {
 [SYS_setpriority] sys_setpriority,
 [SYS_setflag]    sys_setflag,
 [SYS_getflag]    sys_getflag,
+[SYS_getpagefaults]   sys_getpagefaults,
 };
 
 void
