@@ -1,3 +1,5 @@
+#define MAX_PAGES 20
+
 // Per-CPU state
 struct cpu
 {
@@ -44,12 +46,13 @@ enum procstate
   ZOMBIE
 };
 
-struct frameinfo {
-  uint va ;             // Virtual address of page
-  pte_t * pte ;         // Page table entry
-  int ref ;             // Reference ( optional for CLOCK )
-  uint last_used ;      // Time of last access ( for LRU )
-};
+// LRU
+// struct frameinfo {
+//   uint va ;             // Virtual address of page
+//   pte_t * pte ;         // Page table entry
+//   int ref ;             // Reference ( optional for CLOCK )
+//   uint last_used ;      // Time of last access ( for LRU )
+// };
 
 // Per-process state
 struct proc
@@ -73,8 +76,14 @@ struct proc
   int get_proc_info;
   int priority;             // Process priority (lower value means higher priority)
   int page_faults;          // Count of page faults
-  struct frameinfo frames[16];     // Track resident pages ( up to 16)
-  int framecount ;                  // Number of frames used
+
+  // LRU
+  // struct frameinfo frames[16];     // Track resident pages ( up to 16)
+  // int framecount ;                  // Number of frames used
+
+  // FIFO
+  int pages[MAX_PAGES]; // FIFO pages
+  int page_count;
 };
 
 

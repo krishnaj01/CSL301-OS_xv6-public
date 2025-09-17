@@ -8,7 +8,9 @@
 #include "elf.h"
 
 extern char data[];  // defined by kernel.ld
-extern uint ticks ; // global tick counter from trap.c
+
+// LRU
+// extern uint ticks ; // global tick counter from trap.c
 pde_t *kpgdir;  // for use in scheduler()
 
 // Set up CPU's kernel segment descriptors.
@@ -220,8 +222,7 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
 // Allocate page tables and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
 int
-allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
-{
+allocuvm(pde_t *pgdir, uint oldsz, uint newsz) {
   char *mem;
   uint a;
 
@@ -245,33 +246,47 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
     }
 
     // LRU Update
-    struct proc *curproc = myproc();
-    if (curproc) {
-      if (curproc->framecount < 16) {
-        curproc->frames[curproc->framecount].va = a;
-        curproc->frames[curproc->framecount].pte = walkpgdir(pgdir, (void *)a, 0);
-        curproc->frames[curproc->framecount].last_used = ticks;
-        curproc->framecount++;
-      } else {
-        // Select victim using LRU
-        int victim_index = 0;
-        for (int i = 1; i < curproc->framecount; i++) {
-          if (curproc->frames[i].last_used < curproc->frames[victim_index].last_used) {
-            victim_index = i;
-          }
-        }
-        
-        // Free victim
-        pte_t *vpte = curproc->frames[victim_index].pte;
-        uint vpa = PTE_ADDR(*vpte);
-        kfree ( P2V ( vpa ) ) ;
-        *vpte = 0;
+    //   struct proc *curproc = myproc();
+    //   if (curproc) {
+    //     if (curproc->framecount < 16) {
+    //       curproc->frames[curproc->framecount].va = a;
+    //       curproc->frames[curproc->framecount].pte = walkpgdir(pgdir, (void *)a, 0);
+    //       curproc->frames[curproc->framecount].last_used = ticks;
+    //       curproc->framecount++;
+    //     } else {
+    //       // Select victim using LRU
+    //       int victim_index = 0;
+    //       for (int i = 1; i < curproc->framecount; i++) {
+    //         if (curproc->frames[i].last_used < curproc->frames[victim_index].last_used) {
+    //           victim_index = i;
+    //         }
+    //       }
+          
+    //       // Free victim
+    //       pte_t *vpte = curproc->frames[victim_index].pte;
+    //       uint vpa = PTE_ADDR(*vpte);
+    //       kfree ( P2V ( vpa ) ) ;
+    //       *vpte = 0;
 
-        // Replace with new
-        curproc->frames[victim_index].va = a;
-        curproc->frames[victim_index].pte = walkpgdir(pgdir, (void *)a, 0);
-        curproc->frames[victim_index].last_used = ticks;
-      }
+    //       // Replace with new
+    //       curproc->frames[victim_index].va = a;
+    //       curproc->frames[victim_index].pte = walkpgdir(pgdir, (void *)a, 0);
+    //       curproc->frames[victim_index].last_used = ticks;
+    //     }
+    //   }
+
+    // FIFO Update
+    struct proc *cur = myproc();
+    if(cur->page_count < MAX_PAGES) {
+      cur->pages[cur->page_count++] = (int)a;
+      cprintf("Allocated page %d at virtual address 0x%x\n", cur->page_count-1, a);
+    } else {
+      int evict = cur->pages[0];
+      mem = (char*)P2V(PTE_ADDR(*walkpgdir(pgdir, (void*)evict, 0)));
+      kfree(mem);
+      for(int i = 1; i < MAX_PAGES; i++) cur->pages[i-1] = cur->pages[i];
+      cur->pages[MAX_PAGES-1] = (int)a;
+      cprintf("Evicted page at 0x%x, allocated new page at 0x%x\n", evict, a);
     }
   }
   return newsz;
@@ -439,14 +454,15 @@ int vmfault(pde_t *pgdir, uint va, int write) {
   return 0;
 }
 
-void update_lru_access(struct proc *p, uint va) {
-  for (int i = 0; i < p->framecount; i++) {
-    if (p->frames[i].va == va) {
-      p->frames[i].last_used = ticks; // update on access
-      break;
-    }
-  }
-}
+// LRU
+// void update_lru_access(struct proc *p, uint va) {
+//   for (int i = 0; i < p->framecount; i++) {
+//     if (p->frames[i].va == va) {
+//       p->frames[i].last_used = ticks; // update on access
+//       break;
+//     }
+//   }
+// }
 
 
 //PAGEBREAK!
