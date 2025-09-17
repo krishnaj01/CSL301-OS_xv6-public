@@ -8,6 +8,7 @@
 #include "elf.h"
 
 extern char data[];  // defined by kernel.ld
+extern uint ticks ; // global tick counter from trap.c
 pde_t *kpgdir;  // for use in scheduler()
 
 // Set up CPU's kernel segment descriptors.
@@ -224,10 +225,8 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   char *mem;
   uint a;
 
-  if(newsz >= KERNBASE)
-    return 0;
-  if(newsz < oldsz)
-    return oldsz;
+  if(newsz >= KERNBASE) return 0;
+  if(newsz < oldsz) return oldsz;
 
   a = PGROUNDUP(oldsz);
   for(; a < newsz; a += PGSIZE){
@@ -243,6 +242,36 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
       deallocuvm(pgdir, newsz, oldsz);
       kfree(mem);
       return 0;
+    }
+
+    // LRU Update
+    struct proc *curproc = myproc();
+    if (curproc) {
+      if (curproc->framecount < 16) {
+        curproc->frames[curproc->framecount].va = a;
+        curproc->frames[curproc->framecount].pte = walkpgdir(pgdir, (void *)a, 0);
+        curproc->frames[curproc->framecount].last_used = ticks;
+        curproc->framecount++;
+      } else {
+        // Select victim using LRU
+        int victim_index = 0;
+        for (int i = 1; i < curproc->framecount; i++) {
+          if (curproc->frames[i].last_used < curproc->frames[victim_index].last_used) {
+            victim_index = i;
+          }
+        }
+        
+        // Free victim
+        pte_t *vpte = curproc->frames[victim_index].pte;
+        uint vpa = PTE_ADDR(*vpte);
+        kfree ( P2V ( vpa ) ) ;
+        *vpte = 0;
+
+        // Replace with new
+        curproc->frames[victim_index].va = a;
+        curproc->frames[victim_index].pte = walkpgdir(pgdir, (void *)a, 0);
+        curproc->frames[victim_index].last_used = ticks;
+      }
     }
   }
   return newsz;
@@ -408,6 +437,15 @@ int vmfault(pde_t *pgdir, uint va, int write) {
     return -1;
   }
   return 0;
+}
+
+void update_lru_access(struct proc *p, uint va) {
+  for (int i = 0; i < p->framecount; i++) {
+    if (p->frames[i].va == va) {
+      p->frames[i].last_used = ticks; // update on access
+      break;
+    }
+  }
 }
 
 
